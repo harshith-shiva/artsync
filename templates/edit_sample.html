@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArtSync - Edit Sample</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Edit Art Sample</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <form action="{{ url_for('edit_sample', sample_id=sample.sample_id) }}" method="POST" enctype="multipart/form-data">
+            {% if sample.image_path %}
+                <p><strong>Current Image:</strong></p>
+                <img src="{{ url_for('uploaded_file', filename=sample.image_path) }}" alt="Current" style="max-width:300px;">
+            {% endif %}
+            <p><strong>Change Image (optional):</strong></p>
+            <input type="file" name="image" accept="image/*">
+            <textarea name="art_description" required>{{ sample.art_description }}</textarea>
+            <select name="status" required>
+                <option value="unsold" {% if sample.status == 'unsold' %}selected{% endif %}>Unsold</option>
+                <option value="sold" {% if sample.status == 'sold' %}selected{% endif %}>Sold</option>
+            </select>
+            <button type="submit">Update Sample</button>
+        </form>
+        <p><a href="{{ url_for('portfolio') }}">← Back</a></p>
+    </div>
+</body>
+</html>

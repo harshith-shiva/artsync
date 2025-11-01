@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArtSync - Buyer Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="profile-header">
+            <h1>Welcome, {{ session['buyer_name'] }}!</h1>
+            <a href="{{ url_for('buyer_logout') }}" class="btn-secondary">Logout</a>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <h2>Browse Artists</h2>
+        <p>Discover talented artists and request custom quotes.</p>
+
+        <div class="samples-grid" style="margin-top: 1rem;">
+            {% for artist in artists %}
+                <div class="sample-card" style="text-align: center;">
+                    {% if artist.profile_pic %}
+                        <img src="{{ url_for('uploaded_file', filename=artist.profile_pic) }}" 
+                             style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: .5rem;">
+                    {% else %}
+                        <div style="width: 80px; height: 80px; background: #FFCC80; border-radius: 50%; margin: 0 auto .5rem; display: flex; align-items: center; justify-content: center; color: #E65100; font-weight: 600;">
+                            {{ artist.name[0] }}
+                        </div>
+                    {% endif %}
+                    <h3 style="margin: .5rem 0; font-size: 1.1rem;">{{ artist.name }}</h3>
+                    <p style="font-size: .9rem; color: #666;">
+                        {{ artist.type or 'Artist' }} • {{ artist.location or 'Location not set' }}
+                    </p>
+                    <p>
+                        <a href="{{ url_for('public_profile', aid=artist.aid) }}" class="btn-primary" style="font-size: .9rem; padding: .5rem 1rem;">
+                            View Profile
+                        </a>
+                    </p>
+                </div>
+            {% endfor %}
+        </div>
+
+        {% if artists|length == 0 %}
+            <p><em>No artists available yet.</em></p>
+        {% endif %}
+
+        <p style="margin-top: 2rem;">
+            <a href="{{ url_for('buyer_login') }}">← Back to Login</a>
+        </p>
+    </div>
+</body>
+</html>

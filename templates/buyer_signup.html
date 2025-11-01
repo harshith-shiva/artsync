@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArtSync - Buyer Signup</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Buyer Signup</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for c, m in messages %}<div class="flash-{{c}}">{{m}}</div>{% endfor %}{% endif %}
+        {% endwith %}
+        <form action="{{ url_for('buyer_signup') }}" method="POST">
+            <input type="text" name="name" placeholder="Full Name" required>
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="text" name="location" placeholder="Location (optional)">
+            <button type="submit" class="btn-primary">Create Buyer Account</button>
+        </form>
+        <p><a href="{{ url_for('buyer_login') }}">← Back to Login</a></p>
+    </div>
+</body>
+</html>

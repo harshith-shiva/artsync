@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArtSync - Create Portfolio</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Create Portfolio</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <form action="{{ url_for('create_portfolio') }}" method="POST">
+            <input type="text" name="license_info" placeholder="License Info (e.g. CC BY-NC)" required>
+            <textarea name="description" placeholder="Portfolio description..." required></textarea>
+            <select name="visibility" required>
+                <option value="public">Public</option>
+                <option value="private">Private</option>
+            </select>
+            <button type="submit">Create Portfolio</button>
+        </form>
+        <p><a href="{{ url_for('dashboard') }}">← Back to Dashboard</a></p>
+    </div>
+</body>
+</html>

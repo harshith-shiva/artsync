@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArtSync - Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to ArtSync, {{ user_name }}!</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <p><a href="{{ url_for('profile') }}" class="btn-primary">Edit Profile</a></p>
+
+        <!-- Portfolio section – always visible -->
+        <h2>Portfolio</h2>
+        {% if not artist.portfolio %}
+            <p>You don’t have a portfolio yet.</p>
+            <p><a href="{{ url_for('create_portfolio') }}" class="btn">Create Portfolio</a></p>
+        {% else %}
+            <p><a href="{{ url_for('portfolio') }}" class="btn">View / Edit Portfolio</a></p>
+        {% endif %}
+
+        <!-- Quote Requests Section -->
+        <h2>Quote Requests</h2>
+        {% if requests %}
+            <div class="requests-list">
+                {% for req in requests %}
+                    <div class="request-card">
+                        <p><strong>From:</strong> {{ req.buyer.name }} ({{ req.buyer.email }})</p>
+                        <p><strong>Offer:</strong> ${{ req.quoted_amount }}</p>
+                        <p><strong>Need:</strong> {{ req.need_description }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>No quote requests yet.</p>
+        {% endif %}
+
+        <p><a href="{{ url_for('logout') }}">Logout</a></p>
+    </div>
+</body>
+</html>

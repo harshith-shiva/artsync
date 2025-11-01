@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArtSync - My Profile</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="profile-header">
+            <h1>My Profile</h1>
+            <a href="{{ url_for('dashboard') }}" class="btn-secondary">← Dashboard</a>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="profile-card">
+            <div class="profile-pic-section">
+                {% if artist.profile_pic %}
+                    <img src="{{ url_for('uploaded_file', filename=artist.profile_pic) }}" alt="Profile" class="profile-img">
+                {% else %}
+                    <div class="profile-img-placeholder">No Photo</div>
+                {% endif %}
+            </div>
+
+            <div class="profile-info">
+                <h2>{{ artist.name }}</h2>
+                <p><strong>Age:</strong> {{ artist.age or 'Not set' }}</p>
+                <p><strong>Type:</strong> {{ artist.type or 'Not set' }}</p>
+                <p><strong>Location:</strong> {{ artist.location or 'Not set' }}</p>
+                <p><strong>Socials:</strong> 
+                    {% if artist.socials %}
+                        <a href="{{ artist.socials }}" target="_blank">{{ artist.socials }}</a>
+                    {% else %}Not set{% endif %}
+                </p>
+                <p><strong>Bio:</strong><br>{{ artist.description or 'No bio yet.' }}</p>
+            </div>
+        </div>
+
+        <details class="edit-section">
+            <summary><strong>Edit Profile</strong></summary>
+            <form action="{{ url_for('profile') }}" method="POST" enctype="multipart/form-data" class="edit-form">
+                <input type="text" name="name" value="{{ artist.name }}" required placeholder="Full Name">
+                <input type="number" name="age" value="{{ artist.age }}" placeholder="Age (optional)">
+                <select name="type" required>
+                    <option value="standalone" {% if artist.type == 'standalone' %}selected{% endif %}>Standalone</option>
+                    <option value="group" {% if artist.type == 'group' %}selected{% endif %}>Group</option>
+                </select>
+                <input type="text" name="location" value="{{ artist.location }}" placeholder="Location">
+                <input type="url" name="socials" value="{{ artist.socials }}" placeholder="Social Link (e.g. Instagram)">
+                <textarea name="description" placeholder="Tell us about yourself...">{{ artist.description or '' }}</textarea>
+                
+                <label><strong>Change Profile Picture</strong></label>
+                <input type="file" name="profile_pic" accept="image/*">
+
+                <button type="submit" class="btn-primary">Update Profile</button>
+            </form>
+        </details>
+    </div>
+</body>
+</html>

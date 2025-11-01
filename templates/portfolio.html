@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArtSync - My Portfolio</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>My Portfolio</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if not portfolio %}
+            <p>You don't have a portfolio yet.</p>
+            <p><a href="{{ url_for('create_portfolio') }}" class="btn">Create Portfolio</a></p>
+        {% else %}
+            <div class="portfolio-info">
+                <p><strong>License:</strong> {{ portfolio.license_info or 'Not set' }}</p>
+                <p><strong>Description:</strong> {{ portfolio.description or 'No description' }}</p>
+                <p><strong>Visibility:</strong> {{ portfolio.visibility }}</p>
+            </div>
+
+            <h2>Art Samples</h2>
+            <p><a href="{{ url_for('add_sample') }}" class="btn">Add New Sample</a></p>
+
+            {% if portfolio.samples %}
+                <div class="samples-grid">
+                    {% for sample in portfolio.samples %}
+                        <div class="sample-card">
+                            {% if sample.image_path %}
+                                <img src="{{ url_for('uploaded_file', filename=sample.image_path) }}" alt="Art">
+                            {% endif %}
+                            <p>{{ sample.art_description or 'No description' }}</p>
+                            <p><strong>Status:</strong> <span class="status-{{ sample.status }}">{{ sample.status }}</span></p>
+                            <p>
+                                <a href="{{ url_for('edit_sample', sample_id=sample.sample_id) }}">Edit</a> |
+                                <a href="{{ url_for('delete_sample', sample_id=sample.sample_id) }}" 
+                                   onclick="return confirm('Delete this sample?')">Delete</a>
+                            </p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p>No samples yet.</p>
+            {% endif %}
+        {% endif %}
+
+        <p><a href="{{ url_for('dashboard') }}">← Back to Dashboard</a></p>
+    </div>
+</body>
+</html>
