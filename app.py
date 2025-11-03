@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+
 from decimal import Decimal as PyDecimal  # <-- ADD THIS IMPORT
 # ... other imports ...
 
@@ -7,6 +9,7 @@ from decimal import Decimal as PyDecimal  # <-- ADD THIS IMPORT
 import bcrypt
 import os
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Replace with a secure key
@@ -80,6 +83,45 @@ class BuysFrom(db.Model):
     status = db.Column(db.String(20), default='pending')  # NEW: pending, accepted, rejected
 
 
+class Sponsor(db.Model):
+    __tablename__ = 'Sponsors'
+    sid = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    logo = db.Column(db.String(255))
+    contact_email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    sector = db.Column(db.String(100))
+    reputation_score = db.Column(db.Integer, default=0)
+    sponsored_count = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+# --- SPONSOR REQUEST MODEL ---
+class SponsorRequest(db.Model):
+    __tablename__ = 'SponsorRequests'
+    rid = db.Column(db.Integer, primary_key=True)
+    sponsor_id = db.Column(db.Integer, db.ForeignKey('Sponsors.sid', ondelete='CASCADE'))
+    artist_id = db.Column(db.Integer, db.ForeignKey('Artist.aid', ondelete='CASCADE'))
+    message = db.Column(db.Text, nullable=False)
+    status = db.Column(db.Enum('pending', 'accepted', 'rejected'), default='pending')
+    initiated_by = db.Column(db.Enum('artist', 'sponsor'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # --- Add relationship for easy querying ---
+    Sponsor.requests_received = db.relationship('SponsorRequest', 
+        foreign_keys='SponsorRequest.sponsor_id', 
+        backref='sponsor', lazy=True)
+
+    Artist.requests_received = db.relationship('SponsorRequest', 
+        foreign_keys='SponsorRequest.artist_id', 
+        backref='artist', lazy=True)
+
+
+
 # --- Helper: Check file extension ---
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -97,6 +139,7 @@ def login():
         artist = Artist.query.filter_by(email=email).first()
         if artist and bcrypt.checkpw(password, artist.password.encode('utf-8')):
             session['user_id'] = artist.aid
+            session['artist_id'] = artist.aid
             session['user_name'] = artist.name
             flash('Login successful!', 'success')
             return redirect(url_for('dashboard'))
@@ -446,6 +489,193 @@ def reject_request(aid, bid):
     db.session.commit()
     flash('Request rejected.', 'info')
     return redirect(url_for('dashboard'))
+
+# --- SPONSOR: REGISTER ---
+@app.route('/sponsor/register', methods=['GET', 'POST'])
+def sponsor_register():
+    if request.method == 'POST':
+        name = request.form['name']
+        email = request.form['email']
+        password = request.form['password']
+        sector = request.form.get('sector', '')
+
+        if Sponsor.query.filter_by(contact_email=email).first():
+            flash('Email already registered.', 'error')
+            return redirect(url_for('sponsor_register'))
+
+        sponsor = Sponsor(name=name, contact_email=email, sector=sector)
+        sponsor.set_password(password)
+
+        # Handle logo upload
+        logo = request.files.get('logo')
+        if logo and allowed_file(logo.filename):
+            filename = secure_filename(logo.filename)
+            logo_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'sponsors')
+            os.makedirs(logo_dir, exist_ok=True)
+            logo.save(os.path.join(logo_dir, filename))
+            sponsor.logo = f"sponsors/{filename}"
+
+        db.session.add(sponsor)
+        db.session.commit()
+        flash('Sponsor registered! Please login.', 'success')
+        return redirect(url_for('sponsor_login'))
+    return render_template('sponsor_register.html')
+
+# --- SPONSOR: LOGIN ---
+@app.route('/sponsor/login', methods=['GET', 'POST'])
+def sponsor_login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        sponsor = Sponsor.query.filter_by(contact_email=email).first()
+        if sponsor and sponsor.check_password(password):
+            session['sponsor_id'] = sponsor.sid
+            flash('Logged in as sponsor!', 'success')
+            return redirect(url_for('sponsor_dashboard'))
+        flash('Invalid email or password.', 'error')
+    return render_template('sponsor_login.html')
+
+# --- SPONSOR: LOGOUT ---
+@app.route('/sponsor/logout')
+def sponsor_logout():
+    session.pop('sponsor_id', None)
+    flash('Logged out.', 'success')
+    return redirect(url_for('login'))
+
+# --- SPONSOR: DASHBOARD ---
+@app.route('/sponsor/dashboard')
+def sponsor_dashboard():
+    if 'sponsor_id' not in session:
+        return redirect(url_for('sponsor_login'))
+    sponsor = Sponsor.query.get(session['sponsor_id'])
+    artists = Artist.query.all()
+    return render_template('sponsor_dashboard.html', sponsor=sponsor, artists=artists)
+
+# --- SPONSOR: SEND OFFER TO ARTIST ---
+
+# --- ARTIST: VIEW TOP SPONSORS ---
+@app.route('/artist/sponsors')
+def artist_sponsors():
+    if 'artist_id' not in session:
+        return redirect(url_for('login'))
+    sponsors = Sponsor.query.order_by(Sponsor.reputation_score.desc()).limit(10).all()
+    return render_template('artist_sponsors.html', sponsors=sponsors)
+
+# --- ARTIST: REQUEST SPONSORSHIP ---
+@app.route('/artist/request_sponsor/<int:sid>', methods=['GET', 'POST'])
+def request_sponsor(sid):
+    if session.get('user_id') is None:
+        return redirect(url_for('login'))
+    sponsor = Sponsor.query.get_or_404(sid)
+    if request.method == 'POST':
+        message = request.form['message']
+        req = SponsorRequest(
+            sponsor_id=sid,
+            artist_id=session['artist_id'],
+            message=message,
+            initiated_by='artist'
+        )
+        db.session.add(req)
+        db.session.commit()
+        flash('Request sent!', 'success')
+        return redirect(url_for('artist_sponsors'))
+    return render_template('request_sponsor.html', sponsor=sponsor)
+
+
+@app.route('/sponsor/offer/<int:aid>', methods=['GET', 'POST'])
+def sponsor_offer(aid):
+    if 'sponsor_id' not in session:
+        flash('Please login as sponsor.', 'error')
+        return redirect(url_for('sponsor_login'))
+
+    artist = Artist.query.get_or_404(aid)
+
+    if request.method == 'POST':
+        message = request.form['message']
+        amount = request.form.get('amount', '')
+        duration = request.form.get('duration', '')
+
+        # Build full message
+        full_message = message
+        if amount:
+            full_message += f"\n\nOffer Amount: ${amount}"
+        if duration:
+            full_message += f"\nDuration: {duration} month(s)"
+
+        req = SponsorRequest(
+            sponsor_id=session['sponsor_id'],
+            artist_id=aid,
+            message=full_message,
+            initiated_by='sponsor'
+        )
+        db.session.add(req)
+        db.session.commit()
+        flash('Offer sent successfully!', 'success')
+        return redirect(url_for('sponsor_dashboard'))
+
+    return render_template('sponsor_offer.html', artist=artist)
+
+
+# --- SPONSOR: VIEW INCOMING REQUESTS ---
+@app.route('/sponsor/inbox')
+def sponsor_inbox():
+    if 'sponsor_id' not in session:
+        return redirect(url_for('sponsor_login'))
+    requests = SponsorRequest.query.filter_by(sponsor_id=session['sponsor_id']).all()
+    return render_template('sponsor_inbox.html', requests=requests)
+
+# --- SPONSOR: ACCEPT/REJECT REQUEST ---
+@app.route('/sponsor/request/<int:rid>/<action>')
+def sponsor_handle_request(rid, action):
+    if 'sponsor_id' not in session:
+        return redirect(url_for('sponsor_login'))
+    req = SponsorRequest.query.get_or_404(rid)
+    if req.sponsor_id != session['sponsor_id']:
+        flash('Unauthorized.', 'error')
+        return redirect(url_for('sponsor_inbox'))
+    if action == 'accept':
+        req.status = 'accepted'
+        req.sponsor.sponsored_count += 1
+        req.sponsor.reputation_score += 20
+        flash('Request accepted!', 'success')
+    elif action == 'reject':
+        req.status = 'rejected'
+        flash('Request rejected.', 'info')
+    db.session.commit()
+    return redirect(url_for('sponsor_inbox'))
+
+# --- ARTIST: VIEW INCOMING OFFERS ---
+@app.route('/artist/inbox')
+def artist_inbox():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    requests = SponsorRequest.query.filter_by(artist_id=session['user_id']).all()
+    return render_template('artist_inbox.html', requests=requests)
+
+# --- ARTIST: ACCEPT/REJECT OFFER ---
+@app.route('/artist/request/<int:rid>/<action>')
+def artist_handle_request(rid, action):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    req = SponsorRequest.query.get_or_404(rid)
+    if req.artist_id != session['user_id']:
+        flash('Unauthorized.', 'error')
+        return redirect(url_for('artist_inbox'))
+    if action == 'accept':
+        req.status = 'accepted'
+        flash('Offer accepted!', 'success')
+    elif action == 'reject':
+        req.status = 'rejected'
+        flash('Offer rejected.', 'info')
+    db.session.commit()
+    return redirect(url_for('artist_inbox'))
+
+
+
+
+
+
+
 
 
 

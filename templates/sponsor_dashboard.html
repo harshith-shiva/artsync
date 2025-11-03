@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArtSync - Sponsor Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="{{ url_for('static', filename='js/darkmode.js') }}" defer></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome, {{ sponsor.name }}!</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <p><strong>Reputation:</strong> {{ sponsor.reputation_score }}★ ({{ sponsor.sponsored_count }} artists)</p>
+
+        <h2>Browse Artists</h2>
+        {% if artists %}
+            <div class="sponsors-grid">
+                {% for artist in artists %}
+                    <div class="sponsor-card">
+                        <h3>{{ artist.name }}</h3>
+                        <p>{{ artist.description|truncate(100) or 'No bio' }}</p>
+                        <a href="{{ url_for('sponsor_offer', aid=artist.aid) }}" class="btn-primary">Send Offer</a>
+                        <p><a href="{{ url_for('sponsor_inbox') }}" class="btn-primary">View Inbox ({{ sponsor.requests_received|length }})</a></p>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>No artists available.</p>
+        {% endif %}
+
+        <p><a href="{{ url_for('sponsor_logout') }}" class="btn-secondary">Logout</a></p>
+    </div>
+
+    <!-- DARK MODE TOGGLE -->
+    <div style="position:fixed; bottom:1.5rem; right:1.5rem; z-index:1000;">
+        <button type="button" class="darkmode-toggle">Toggle</button>
+    </div>
+</body>
+</html>

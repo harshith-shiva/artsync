@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArtSync - Send Offer to {{ artist.name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="{{ url_for('static', filename='js/darkmode.js') }}" defer></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Send Sponsorship Offer to {{ artist.name }}</h1>
+
+        <!-- Artist Info -->
+        <div class="artist-preview">
+            {% if artist.profile_pic %}
+                <img src="{{ url_for('uploaded_file', filename=artist.profile_pic) }}" alt="{{ artist.name }}" class="artist-avatar">
+            {% else %}
+                <div class="artist-avatar placeholder">{{ artist.name[0] }}</div>
+            {% endif %}
+            <div>
+                <h3>{{ artist.name }}</h3>
+                <p><strong>Type:</strong> {{ artist.type or 'Artist' }}</p>
+                <p><strong>Location:</strong> {{ artist.location or 'Not specified' }}</p>
+                <p><strong>Bio:</strong> {{ artist.bio or 'No bio available' | truncate(120) }}</p>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+            <div class="form-group">
+                <label for="message">Your Sponsorship Offer *</label>
+                <textarea 
+                    id="message" 
+                    name="message" 
+                    rows="8" 
+                    placeholder="Example: 'We’ll provide $500 + materials for your next exhibition. In return, we’d like logo placement on all promo materials and social media tags.'"
+                    required
+                ></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="amount">Offer Amount ($)</label>
+                <input type="number" id="amount" name="amount" min="0" step="0.01" placeholder="e.g. 500">
+            </div>
+
+            <div class="form-group">
+                <label for="duration">Duration (months)</label>
+                <input type="number" id="duration" name="duration" min="1" max="36" placeholder="e.g. 3">
+            </div>
+
+            <button type="submit" class="btn-primary">Send Offer</button>
+        </form>
+
+        <p><a href="{{ url_for('sponsor_dashboard') }}" class="btn-secondary">Back to Dashboard</a></p>
+    </div>
+
+    <!-- DARK MODE TOGGLE -->
+    <div style="position:fixed; bottom:1.5rem; right:1.5rem; z-index:1000;">
+        <button type="button" class="darkmode-toggle">Toggle</button>
+    </div>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sponsor Inbox</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Your Inbox</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if requests %}
+            <div class="inbox-list">
+                {% for req in requests %}
+                    <div class="inbox-card {{ req.status }}">
+                        <p><strong>From:</strong> {{ req.artist.name }} ({{ req.artist.email }})</p>
+                        <p><strong>Message:</strong></p>
+                        <pre>{{ req.message }}</pre>
+                        <p><strong>Status:</strong> <span class="status-{{ req.status }}">{{ req.status.title() }}</span></p>
+                        {% if req.status == 'pending' %}
+                            <a href="{{ url_for('sponsor_handle_request', rid=req.rid, action='accept') }}" class="btn-success">Accept</a>
+                            <a href="{{ url_for('sponsor_handle_request', rid=req.rid, action='reject') }}" class="btn-danger">Reject</a>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>No requests yet.</p>
+        {% endif %}
+
+        <p><a href="{{ url_for('sponsor_dashboard') }}">← Back to Dashboard</a></p>
+    </div>
+</body>
+</html>

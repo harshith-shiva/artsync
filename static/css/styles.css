@@ -279,3 +279,191 @@ a:hover {
 .status-pending   { background:#fef9e7; color:#f39c12; }
 .status-accepted  { background:#d5f5e3; color:#27ae60; }
 .status-rejected  { background:#fadbd8; color:#e74c3c; }
+
+
+/* Dark Mode */
+body.dark {
+    background: #121212;
+    color: #E0E0E0;
+}
+body.dark .container {
+    background: #1E1E1E;
+    box-shadow: 0 4px 20px rgba(0,0,0,.3);
+}
+body.dark .btn-primary {
+    background: #333;
+    color: #FF9800;
+    border-color: #FF9800;
+}
+body.dark .btn-primary:hover {
+    background: #FF9800;
+    color: #000;
+}
+body.dark .flash-success { background: #1b5e20; }
+body.dark .flash-error { background: #b71c1c; }
+body.dark input, body.dark select, body.dark textarea {
+    background: #333;
+    color: #FFF;
+    border-color: #555;
+}
+body.dark .sample-card, body.dark .request-card {
+    background: #252525;
+    box-shadow: 0 4px 15px rgba(0,0,0,.4);
+}
+body.dark h1, body.dark h2, body.dark h3 {
+    color: #FFCC80;
+}
+
+/* === SPONSOR GRID & CARD === */
+.sponsors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin: 1.5rem 0;
+}
+
+.sponsor-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 1.2rem;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(255, 152, 0, 0.12);
+    transition: all 0.25s ease;
+    border: 1px solid #ffe0b3;
+}
+
+.sponsor-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 10px 25px rgba(255, 152, 0, 0.2);
+}
+
+.sponsor-card img {
+    width: 100%;
+    height: 80px;
+    object-fit: contain;
+    margin-bottom: 0.8rem;
+    border-radius: 8px;
+    background: #f9f9f9;
+    padding: 0.3rem;
+}
+
+.no-logo {
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0f0f0;
+    color: #999;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    margin-bottom: 0.8rem;
+}
+
+.sponsor-card h3 {
+    margin: 0.5rem 0;
+    font-size: 1.1rem;
+    color: #333;
+}
+
+.sector, .reputation {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 0.4rem 0;
+}
+
+.stars {
+    color: #FF9800;
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+}
+
+/* Dark Mode */
+body.dark .sponsor-card {
+    background: #1e1e1e;
+    border-color: #333;
+    color: #e0e0e0;
+}
+body.dark .sponsor-card img { background: #2a2a2a; }
+body.dark .no-logo { background: #2a2a2a; color: #777; }
+body.dark .sponsor-card h3 { color: #fff; }
+body.dark .sector, body.dark .reputation { color: #aaa; }
+
+/* Sponsor Register */
+.form-group small {
+    color: #666;
+    font-size: 0.85rem;
+}
+
+/* Sponsor Offer Page */
+.artist-preview {
+    display: flex;
+    align-items: center;
+    background: #f9f9f9;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+    border: 1px solid #ffe0b3;
+}
+.artist-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #FFCC80;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: #E65100;
+    font-size: 1.8rem;
+}
+.artist-preview h3 {
+    margin: 0 0 0.5rem 0;
+    color: #333;
+}
+.artist-preview p {
+    margin: 0.3rem 0;
+    font-size: 0.95rem;
+    color: #555;
+}
+
+/* Dark Mode */
+body.dark .artist-preview {
+    background: #1e1e1e;
+    border-color: #333;
+    color: #e0e0e0;
+}
+body.dark .artist-preview h3 { color: #fff; }
+body.dark .artist-preview p { color: #aaa; }
+
+/* Inbox */
+.inbox-list { margin: 1.5rem 0; }
+.inbox-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid #ddd;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.inbox-card.pending { border-left-color: #FF9800; }
+.inbox-card.accepted { border-left-color: #4CAF50; }
+.inbox-card.rejected { border-left-color: #f44336; }
+.inbox-card pre {
+    background: #f5f5f5;
+    padding: 0.8rem;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    white-space: pre-wrap;
+    margin: 0.5rem 0;
+}
+.status-pending { color: #FF9800; font-weight: bold; }
+.status-accepted { color: #4CAF50; font-weight: bold; }
+.status-rejected { color: #f44336; font-weight: bold; }
+.btn-success { background: #4CAF50; color: white; padding: 0.4rem 0.8rem; margin-right: 0.5rem; }
+.btn-danger { background: #f44336; color: white; padding: 0.4rem 0.8rem; }
+
+/* Dark Mode */
+body.dark .inbox-card { background: #1e1e1e; border-left-color: #333; }
+body.dark .inbox-card pre { background: #2a2a2a; color: #ddd; }

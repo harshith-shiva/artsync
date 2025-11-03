@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArtSync - Find Sponsors</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="{{ url_for('static', filename='js/darkmode.js') }}" defer></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Find Sponsors</h1>
+        <p>Connect with brands that support your art. <strong>Top 10 by reputation.</strong></p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if sponsors %}
+            <div class="sponsors-grid">
+                {% for sponsor in sponsors %}
+                <div class="sponsor-card">
+                    <!-- Logo -->
+                    {% if sponsor.logo %}
+                        <img src="{{ url_for('uploaded_file', filename=sponsor.logo) }}" alt="{{ sponsor.name }} Logo">
+                    {% else %}
+                        <div class="no-logo">No Logo</div>
+                    {% endif %}
+
+                    <!-- Name & Sector -->
+                    <h3>{{ sponsor.name }}</h3>
+                    <p class="sector"><strong>Sector:</strong> {{ sponsor.sector or 'General' }}</p>
+
+                    <!-- Reputation -->
+                    <p class="reputation">
+                        <strong>Reputation:</strong>
+                        <span class="stars">
+                            {% for i in range(5) %}
+                                {% if i < (sponsor.reputation_score // 20) %}
+                                    ★
+                                {% else %}
+                                    ☆
+                                {% endif %}
+                            {% endfor %}
+                        </span>
+                        ({{ sponsor.sponsored_count }} artists)
+                    </p>
+
+                    <!-- Action Button -->
+                    <a href="{{ url_for('request_sponsor', sid=sponsor.sid) }}" class="btn-primary">Request Aid</a>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>No sponsors available yet. <a href="{{ url_for('sponsor_register') }}">Be the first sponsor!</a></p>
+        {% endif %}
+
+        <p><a href="{{ url_for('dashboard') }}" class="btn-secondary">Back to Dashboard</a></p>
+    </div>
+
+    <!-- DARK MODE TOGGLE (same as login) -->
+    <div style="position:fixed; bottom:1.5rem; right:1.5rem; z-index:1000;">
+        <button type="button" class="darkmode-toggle">Toggle</button>
+    </div>
+</body>
+</html>

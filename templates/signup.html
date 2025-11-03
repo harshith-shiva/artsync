@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ArtSync - Sign Up</title>
+    <title>ArtSync - Artist Signup</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="{{ url_for('static', filename='js/paintbrush.js') }}" defer></script>
 </head>
 <body>
     <div class="container">
-        <h1>ArtSync</h1>
-        <h2>Sign Up</h2>
+        <h1>Artist Signup</h1>
+
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -17,21 +18,30 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
-        <form action="{{ url_for('signup') }}" method="POST">
-            <input type="text" name="name" placeholder="Full Name" required>
-            <input type="email" name="email" placeholder="Email" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <input type="number" name="age" placeholder="Age (optional)">
-            <select name="type" required>
-                <option value="" disabled selected>Select Artist Type</option>
-                <option value="standalone">Standalone</option>
-                <option value="group">Group</option>
-            </select>
-            <input type="text" name="location" placeholder="Location (optional)">
-            <input type="text" name="socials" placeholder="Social Media Links (optional)">
-            <button type="submit">Sign Up</button>
+
+        <form method="POST">
+            <div class="form-group">
+                <label for="name">Name</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div style="display: flex; align-items: center;">
+                    <input type="password" id="password" name="password" required style="flex: 1;">
+                    <button type="button" class="password-toggle">Toggle</button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary">Create Artist Account</button>
         </form>
-        <p>Already have an account? <a href="{{ url_for('login') }}">Login</a></p>
+
+        <p><a href="{{ url_for('login') }}">Back to Login</a></p>
     </div>
 </body>
 </html>

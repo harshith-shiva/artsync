@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ArtSync - Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="{{ url_for('static', filename='js/darkmode.js') }}" defer></script>  <!-- ADDED -->
 </head>
 <body>
     <div class="container">
@@ -45,7 +46,17 @@
             <p>No quote requests yet.</p>
         {% endif %}
 
+        <!-- SPONSORS BUTTON -->
+        <p><a href="{{ url_for('artist_sponsors') }}" class="btn-primary">Find Sponsors</a></p>
+        <!-- ADD THIS LINE after "Find Sponsors" -->
+        <p><a href="{{ url_for('artist_inbox') }}" class="btn-primary">View Offers ({{ artist.requests_received|length }})</a></p>
+
         <p><a href="{{ url_for('logout') }}">Logout</a></p>
+    </div>
+
+    <!-- DARK MODE TOGGLE -->
+    <div style="position:fixed; bottom:1.5rem; right:1.5rem; z-index:1000;">
+        <button type="button" class="darkmode-toggle">Toggle</button>
     </div>
 </body>
 </html>
