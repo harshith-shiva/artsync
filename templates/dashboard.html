@@ -51,6 +51,8 @@
         <!-- ADD THIS LINE after "Find Sponsors" -->
         <p><a href="{{ url_for('artist_inbox') }}" class="btn-primary">View Offers ({{ artist.requests_received|length }})</a></p>
         <p><a href="{{ url_for('events_page') }}" class="btn-primary">Browse Events</a></p>
+        <p><a href="{{ url_for('artist_stats') }}" class="btn-primary">View My Stats</a></p>
+        
         <p><a href="{{ url_for('logout') }}">Logout</a></p>
     </div>
 

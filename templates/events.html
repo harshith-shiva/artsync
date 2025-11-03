@@ -37,12 +37,27 @@
                     </div>
 
                     <div class="event-actions">
+                        <!-- ARTIST: Apply Button -->
                         {% if 'user_id' in session %}
-                            <a href="{{ url_for('apply_to_event', eid=event.eid) }}" class="btn-primary">Apply to Perform</a>
+                            {% set has_applied = hosts|selectattr('aid', 'equalto', session.user_id)|selectattr('eid', 'equalto', event.eid)|list %}
+                            {% if has_applied %}
+                                <button class="btn-disabled" disabled>Applied</button>
+                            {% else %}
+                                <a href="{{ url_for('apply_to_event', eid=event.eid) }}" class="btn-primary">Apply to Perform</a>
+                            {% endif %}
                         {% endif %}
+
+                        <!-- SPONSOR: Fund Button -->
                         {% if 'sponsor_id' in session %}
-                            <a href="{{ url_for('fund_event', eid=event.eid) }}" class="btn-success">Fund Event</a>
+                            {% set has_funded = funds|selectattr('sid', 'equalto', session.sponsor_id)|selectattr('eid', 'equalto', event.eid)|list %}
+                            {% if has_funded %}
+                                <button class="btn-disabled" disabled>Funded</button>
+                            {% else %}
+                                <a href="{{ url_for('fund_event', eid=event.eid) }}" class="btn-success">Fund Event</a>
+                            {% endif %}
                         {% endif %}
+
+                        <!-- GUEST: Login Prompt -->
                         {% if not session %}
                             <p class="login-prompt">
                                 <a href="{{ url_for('login') }}">Login as Artist</a> or 
@@ -56,11 +71,11 @@
         {% else %}
             <div class="empty-state">
                 <p>No events scheduled yet.</p>
-                <p><a href="{{ url_for('contractor_login') }}">Contractors: Create an event →</a></p>
+                <p><a href="{{ url_for('contractor_login') }}">Contractors: Create an event</a></p>
             </div>
         {% endif %}
 
-        <p class="back-link"><a href="{{ url_for('login') }}">← Back to Login</a></p>
+        <p class="back-link"><a href="{{ url_for('login') }}">Back to Login</a></p>
     </div>
 
     <!-- DARK MODE TOGGLE -->

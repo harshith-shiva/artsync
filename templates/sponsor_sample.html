@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sponsor - Sent Offers</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1 class="page-title">Sent Offers</h1>
+
+        {% if sent_offers %}
+            <div class="inbox-list">
+                {% for req, artist in sent_offers %}
+                <div class="inbox-card {{ req.status }}">
+                    <p><strong>To:</strong> {{ artist.name }} ({{ artist.email }})</p>
+                    <p><strong>Offer:</strong></p>
+                    <pre class="offer-message">{{ req.message }}</pre>
+                    <p><strong>Status:</strong> <span class="status-{{ req.status }}">{{ req.status.title() }}</span></p>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>No offers sent yet.</p>
+        {% endif %}
+
+        <p class="back-link"><a href="{{ url_for('sponsor_dashboard') }}">Back to Dashboard</a></p>
+    </div>
+</body>
+</html>

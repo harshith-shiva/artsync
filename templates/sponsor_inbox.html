@@ -26,10 +26,13 @@
                         <p><strong>Message:</strong></p>
                         <pre>{{ req.message }}</pre>
                         <p><strong>Status:</strong> <span class="status-{{ req.status }}">{{ req.status.title() }}</span></p>
-                        {% if req.status == 'pending' %}
-                            <a href="{{ url_for('sponsor_handle_request', rid=req.rid, action='accept') }}" class="btn-success">Accept</a>
-                            <a href="{{ url_for('sponsor_handle_request', rid=req.rid, action='reject') }}" class="btn-danger">Reject</a>
-                        {% endif %}
+                        <!-- REPLACE the button block with this -->
+                        {% if req.status == 'pending' and req.initiated_by == 'artist' %}
+                                <a href="{{ url_for('sponsor_handle_request', rid=req.rid, action='accept') }}" class="btn-success">Accept</a>
+                                <a href="{{ url_for('sponsor_handle_request', rid=req.rid, action='reject') }}" class="btn-danger">Reject</a>
+                        {% elif req.status == 'pending' and req.initiated_by == 'sponsor' %}
+                                <span class="status-pending">Awaiting Artist Response</span>
+                    {% endif %}
                     </div>
                 {% endfor %}
             </div>

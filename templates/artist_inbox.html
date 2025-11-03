@@ -8,7 +8,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Your Offers</h1>
+        <h1 class="page-title">Your Inbox</h1>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -18,29 +18,61 @@
             {% endif %}
         {% endwith %}
 
-        {% if requests %}
+        <!-- === SPONSOR OFFERS === -->
+        {% if sponsor_requests %}
+            <h2 class="inbox-section">Sponsor Offers</h2>
             <div class="inbox-list">
-                {% for req in requests %}
+                {% for req, sponsor in sponsor_requests %}
                     <div class="inbox-card {{ req.status }}">
-                        <p><strong>From:</strong> {{ req.sponsor.name }} ({{ req.sponsor.contact_email }})</p>
-                        {% if req.sponsor.logo %}
-                            <img src="{{ url_for('uploaded_file', filename=req.sponsor.logo) }}" alt="Logo" style="height:40px;">
+                        <p><strong>From:</strong> {{ sponsor.name }} ({{ sponsor.contact_email }})</p>
+                        {% if sponsor.logo %}
+                            <img src="{{ url_for('uploaded_file', filename=sponsor.logo) }}" alt="Logo" style="height:40px; border-radius:6px;">
                         {% endif %}
                         <p><strong>Offer:</strong></p>
-                        <pre>{{ req.message }}</pre>
+                        <pre class="offer-message">{{ req.message }}</pre>
                         <p><strong>Status:</strong> <span class="status-{{ req.status }}">{{ req.status.title() }}</span></p>
-                        {% if req.status == 'pending' %}
-                            <a href="{{ url_for('artist_handle_request', rid=req.rid, action='accept') }}" class="btn-success">Accept</a>
-                            <a href="{{ url_for('artist_handle_request', rid=req.rid, action='reject') }}" class="btn-danger">Reject</a>
+
+                        {% if req.status == 'pending' and req.initiated_by == 'sponsor' %}
+                            <div class="inbox-actions">
+                                <a href="{{ url_for('artist_handle_request', rid=req.rid, action='accept') }}" 
+                                   class="btn-success">Accept</a>
+                                <a href="{{ url_for('artist_handle_request', rid=req.rid, action='reject') }}" 
+                                   class="btn-danger">Reject</a>
+                            </div>
+                        {% elif req.status == 'pending' and req.initiated_by == 'artist' %}
+                            <span class="status-pending">Awaiting Sponsor Response</span>
                         {% endif %}
                     </div>
                 {% endfor %}
             </div>
-        {% else %}
-            <p>No offers yet.</p>
         {% endif %}
 
-        <p><a href="{{ url_for('dashboard') }}">← Back to Dashboard</a></p>
+        <!-- === APPLICATION UPDATES === -->
+        {% if contractor_messages %}
+            <h2 class="inbox-section">Application Updates</h2>
+            <div class="inbox-list">
+                {% for msg in contractor_messages %}
+                    <div class="inbox-card message">
+                        <div class="inbox-header">
+                            <strong>From Contractor</strong>
+                            <span class="timestamp">{{ msg.timestamp.strftime('%b %d, %I:%M %p') }}</span>
+                        </div>
+                        <div class="inbox-content">
+                            {{ msg.content }}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- === EMPTY STATE === -->
+        {% if not sponsor_requests and not contractor_messages %}
+            <div class="empty-state">
+                <p>No messages or offers yet.</p>
+            </div>
+        {% endif %}
+
+        <p class="back-link"><a href="{{ url_for('dashboard') }}">Back to Dashboard</a></p>
     </div>
 </body>
 </html>

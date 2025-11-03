@@ -1,6 +1,9 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text
 from datetime import datetime
+#from models import Message  # ← ADD THIS
+#from models import Artist, Sponsor, Contractor, Event, Hosts, Funds, Message, Request  # ← ADD Request
 
 from decimal import Decimal as PyDecimal  # <-- ADD THIS IMPORT
 # ... other imports ...
@@ -10,6 +13,7 @@ import bcrypt
 import os
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
+
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Replace with a secure key
@@ -152,11 +156,19 @@ class Event(db.Model):
 # --- Contractor hosts Artist in Event ---
 class Hosts(db.Model):
     __tablename__ = 'Hosts'
-    cid = db.Column(db.Integer, db.ForeignKey('Contractor.cid'), primary_key=True)
-    aid = db.Column(db.Integer, db.ForeignKey('Artist.aid'), primary_key=True)
-    eid = db.Column(db.Integer, db.ForeignKey('Events.eid'), primary_key=True)
+    hid = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    cid = db.Column(db.Integer, db.ForeignKey('Contractor.cid'), nullable=False)
+    aid = db.Column(db.Integer, db.ForeignKey('Artist.aid'), nullable=False)
+    eid = db.Column(db.Integer, db.ForeignKey('Events.eid'), nullable=False)
     status = db.Column(db.Enum('pending', 'confirmed', 'rejected'), default='pending')
 
+    __table_args__ = (
+        db.UniqueConstraint('cid', 'aid', 'eid', name='unique_application'),
+    )
+
+    contractor = db.relationship('Contractor', backref='host_applications')
+    artist = db.relationship('Artist', backref='host_applications')
+    event = db.relationship('Event', backref='host_applications')
 # --- Sponsor funds Contractor's Event ---
 class Funds(db.Model):
     __tablename__ = 'Funds'
@@ -165,6 +177,30 @@ class Funds(db.Model):
     eid = db.Column(db.Integer, db.ForeignKey('Events.eid'), primary_key=True)
     amount = db.Column(db.Numeric(10, 2))
     status = db.Column(db.Enum('pending', 'funded'), default='pending')
+
+class Message(db.Model):
+    __tablename__ = 'Messages'
+    mid = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer)
+    sender_type = db.Column(db.Enum('artist', 'sponsor', 'contractor'))
+    receiver_id = db.Column(db.Integer)
+    receiver_type = db.Column(db.Enum('artist', 'sponsor', 'contractor'))
+    content = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Request(db.Model):
+    __tablename__ = 'Request'
+    rid = db.Column(db.Integer, primary_key=True)
+    sid = db.Column(db.Integer, db.ForeignKey('Sponsors.sid'), nullable=False)
+    aid = db.Column(db.Integer, db.ForeignKey('Artist.aid'), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    status = db.Column(db.Enum('pending', 'accepted', 'rejected'), default='pending')
+    initiated_by = db.Column(db.Enum('sponsor', 'artist'), default='sponsor')
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    sponsor = db.relationship('Sponsor', backref='requests')
+    artist = db.relationship('Artist', backref='requests')
 
 
 # --- Helper: Check file extension ---
@@ -672,9 +708,14 @@ def sponsor_offer(aid):
 def sponsor_inbox():
     if 'sponsor_id' not in session:
         return redirect(url_for('sponsor_login'))
-    requests = SponsorRequest.query.filter_by(sponsor_id=session['sponsor_id']).all()
-    return render_template('sponsor_inbox.html', requests=requests)
+    sid = session['sponsor_id']
 
+    # Only show requests initiated by ARTIST
+    requests = SponsorRequest.query.filter_by(
+        sponsor_id=sid, initiated_by='artist'
+    ).all()
+
+    return render_template('sponsor_inbox.html', requests=requests)
 # --- SPONSOR: ACCEPT/REJECT REQUEST ---
 @app.route('/sponsor/request/<int:rid>/<action>')
 def sponsor_handle_request(rid, action):
@@ -700,9 +741,24 @@ def sponsor_handle_request(rid, action):
 def artist_inbox():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    requests = SponsorRequest.query.filter_by(artist_id=session['user_id']).all()
-    return render_template('artist_inbox.html', requests=requests)
+    aid = session['user_id']
 
+    # 1. Sponsor Offers – only those initiated by sponsor
+    sponsor_requests = db.session.query(SponsorRequest, Sponsor)\
+        .join(Sponsor, SponsorRequest.sponsor_id == Sponsor.sid)\
+        .filter(SponsorRequest.artist_id == aid, SponsorRequest.initiated_by == 'sponsor')\
+        .all()
+
+    # 2. Contractor Messages – accept/reject notifications
+    contractor_messages = Message.query.filter_by(
+        receiver_id=aid, receiver_type='artist'
+    ).order_by(Message.timestamp.desc()).all()
+
+    return render_template(
+        'artist_inbox.html',
+        sponsor_requests=sponsor_requests,
+        contractor_messages=contractor_messages
+    )
 # --- ARTIST: ACCEPT/REJECT OFFER ---
 @app.route('/artist/request/<int:rid>/<action>')
 def artist_handle_request(rid, action):
@@ -720,7 +776,6 @@ def artist_handle_request(rid, action):
         flash('Offer rejected.', 'info')
     db.session.commit()
     return redirect(url_for('artist_inbox'))
-
 # --- Contractor: Login ---
 @app.route('/contractor/login', methods=['GET', 'POST'])
 def contractor_login():
@@ -799,42 +854,167 @@ def create_event():
 @app.route('/events')
 def events_page():
     events = Event.query.options(db.joinedload(Event.contractor)).all()
-    return render_template('events.html', events=events)
-
+    applications = Hosts.query.all() if 'user_id' in session else []
+    fundings = Funds.query.all() if 'sponsor_id' in session else []  # ← ADD THIS
+    
+    return render_template('events.html', 
+                           events=events, 
+                           hosts=applications, 
+                           funds=fundings)  # ← PASS TO TEMPLATE
 # --- Artist Apply to Event ---
+
 @app.route('/event/<int:eid>/apply', methods=['GET', 'POST'])
 def apply_to_event(eid):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     event = Event.query.get_or_404(eid)
+    aid = session['user_id']
+
+    # CHECK IF ALREADY APPLIED
+    existing = Hosts.query.filter_by(cid=event.cid, aid=aid, eid=eid).first()
+    if existing:
+        flash('You have already applied to this event.', 'info')
+        return redirect(url_for('events_page'))
+
     if request.method == 'POST':
-        host = Hosts(cid=event.cid, aid=session['user_id'], eid=eid)
+        host = Hosts(cid=event.cid, aid=aid, eid=eid, status='pending')
         db.session.add(host)
         db.session.commit()
-        flash('Application sent!', 'success')
+        flash('Application sent successfully!', 'success')
         return redirect(url_for('events_page'))
+    
     return render_template('apply_event.html', event=event)
-
 # --- Sponsor Fund Event ---
 @app.route('/event/<int:eid>/fund', methods=['GET', 'POST'])
 def fund_event(eid):
     if 'sponsor_id' not in session:
         return redirect(url_for('sponsor_login'))
     event = Event.query.get_or_404(eid)
+    sid = session['sponsor_id']
+
+    # CHECK IF SPONSOR ALREADY FUNDED THIS EVENT
+    existing = Funds.query.filter_by(sid=sid, cid=event.cid, eid=eid).first()
+    if existing:
+        flash('You have already funded this event.', 'info')
+        return redirect(url_for('events_page'))
+
     if request.method == 'POST':
         amount = request.form['amount']
-        fund = Funds(sid=session['sponsor_id'], cid=event.cid, eid=eid, amount=amount)
+        fund = Funds(sid=sid, cid=event.cid, eid=eid, amount=amount, status='funded')
         db.session.add(fund)
         db.session.commit()
-        flash('Funding sent!', 'success')
+        flash('Funding applied successfully!', 'success')
         return redirect(url_for('events_page'))
+    
     return render_template('fund_event.html', event=event)
 
 
 
+@app.route('/sponsor/sent')
+def sponsor_sent():
+    if 'sponsor_id' not in session:
+        return redirect(url_for('sponsor_login'))
+    sid = session['sponsor_id']
+
+    sent_offers = db.session.query(SponsorRequest, Artist)\
+        .join(Artist, SponsorRequest.artist_id == Artist.aid)\
+        .filter(SponsorRequest.sponsor_id == sid, SponsorRequest.initiated_by == 'sponsor')\
+        .all()
+
+    return render_template('sponsor_sent.html', sent_offers=sent_offers)
 
 
 
+
+
+
+
+
+
+@app.route('/artist/stats')
+def artist_stats():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    aid = session['user_id']
+
+    # FIX: Use raw connection + consume ALL results
+    connection = db.engine.raw_connection()
+    try:
+        cursor = connection.cursor()
+        cursor.callproc('GetArtistStats', [aid])
+        
+        # Consume ALL result sets
+        results = cursor.fetchall()
+        if results:
+            row = results[0]  # Only one row
+            stats = {
+                "name": row[0],
+                "events": row[1],
+                "funded_events": row[2],
+                "funding": float(row[3])
+            }
+        else:
+            stats = {"name": "", "events": 0, "funded_events": 0, "funding": 0}
+        
+        # Drain any extra result sets
+        while cursor.nextset():
+            pass
+            
+    finally:
+        cursor.close()
+        connection.close()
+
+    return render_template('artist_stats.html', stats=stats)
+
+
+@app.route('/contractor/inbox')
+def contractor_inbox():
+    if 'contractor_id' not in session:
+        return redirect(url_for('contractor_login'))
+    cid = session['contractor_id']
+    
+    # Get all applications for events hosted by this contractor
+    applications = db.session.query(Hosts, Artist, Event)\
+        .join(Artist, Hosts.aid == Artist.aid)\
+        .join(Event, Hosts.eid == Event.eid)\
+        .filter(Event.cid == cid, Hosts.status == 'pending')\
+        .all()
+    
+    return render_template('contractor_inbox.html', applications=applications)
+
+@app.route('/contractor/application/<int:hid>/<action>')
+def handle_application(hid, action):
+    if 'contractor_id' not in session:
+        return redirect(url_for('contractor_login'))
+    
+    app = Hosts.query.get_or_404(hid)
+    event = Event.query.get(app.eid)
+    
+    if event.cid != session['contractor_id']:
+        flash('Unauthorized.', 'error')
+        return redirect(url_for('contractor_inbox'))
+    
+    if action == 'accept':
+        app.status = 'confirmed'
+        message = f"Congratulations! Your application for '{event.ename}' has been ACCEPTED. Details will be shared soon."
+    elif action == 'reject':
+        app.status = 'rejected'
+        message = f"Sadly, your application for '{event.ename}' has been rejected. Better luck next time!"
+    else:
+        flash('Invalid action.', 'error')
+        return redirect(url_for('contractor_inbox'))
+    
+    db.session.add(Message(
+        sender_id=session['contractor_id'],
+        sender_type='contractor',
+        receiver_id=app.aid,
+        receiver_type='artist',
+        content=message
+    ))
+    db.session.commit()
+    
+    flash(f'Application {action}ed and artist notified!', 'success')
+    return redirect(url_for('contractor_inbox'))
 
 
 

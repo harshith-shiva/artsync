@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Contractor - Applications</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1 class="page-title">Artist Applications</h1>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if applications %}
+            <div class="inbox-list">
+                {% for app, artist, event in applications %}
+                <div class="inbox-item">
+                    <div class="inbox-header">
+                        <strong>{{ artist.name }}</strong> applied to 
+                        <em>{{ event.ename }}</em>
+                    </div>
+                    <div class="inbox-details">
+                        <p><strong>Artist Email:</strong> {{ artist.email }}</p>
+                        <p><strong>Event Date:</strong> {{ event.event_date.strftime('%B %d, %Y') }}</p>
+                        <p><strong>Venue:</strong> {{ event.venue }}</p>
+                    </div>
+                    <div class="inbox-actions">
+                        <a href="{{ url_for('handle_application', hid=app.hid, action='accept') }}" 
+                           class="btn-success">Accept</a>
+                        <a href="{{ url_for('handle_application', hid=app.hid, action='reject') }}" 
+                           class="btn-danger">Reject</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>No pending applications.</p>
+            </div>
+        {% endif %}
+
+        <p class="back-link"><a href="{{ url_for('contractor_dashboard') }}">Back to Dashboard</a></p>
+    </div>
+</body>
+</html>
