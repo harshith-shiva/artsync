@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create Event</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Create Event</h1>
+        <form method="POST">
+            <input type="text" name="ename" placeholder="Event Name" required>
+            <input type="text" name="event_type" placeholder="Type (e.g. Concert)">
+            <input type="date" name="event_date" required>
+            <input type="time" name="event_time" required>
+            <input type="text" name="venue" placeholder="Venue" required>
+            <input type="number" name="capacity" placeholder="Capacity" required>
+            <button type="submit" class="btn-primary">Create</button>
+        </form>
+        <p><a href="{{ url_for('contractor_dashboard') }}">Back</a></p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Apply to {{ event.ename }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Apply to Perform</h1>
+        <p><strong>Event:</strong> {{ event.ename }}</p>
+        <p><strong>Date:</strong> {{ event.event_date }}</p>
+        <form method="POST">
+            <button type="submit" class="btn-primary">Send Application</button>
+        </form>
+        <p><a href="{{ url_for('events_page') }}">Back</a></p>
+    </div>
+</body>
+</html>

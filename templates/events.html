@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArtSync - Events</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="{{ url_for('static', filename='js/darkmode.js') }}" defer></script>
+</head>
+<body>
+    <div class="container">
+        <h1 class="page-title">Upcoming Events</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if events %}
+            <div class="events-grid">
+                {% for event in events %}
+                <div class="event-card">
+                    <div class="event-header">
+                        <h3>{{ event.ename }}</h3>
+                        <span class="event-type">{{ event.event_type or 'General' }}</span>
+                    </div>
+
+                    <div class="event-details">
+                        <p><strong>Date:</strong> {{ event.event_date.strftime('%B %d, %Y') }}</p>
+                        <p><strong>Time:</strong> {{ event.event_time.strftime('%I:%M %p') }}</p>
+                        <p><strong>Venue:</strong> {{ event.venue }}</p>
+                        <p><strong>Capacity:</strong> {{ event.capacity }} attendees</p>
+                        <p><strong>Hosted by:</strong> {{ event.contractor.name }}</p>
+                    </div>
+
+                    <div class="event-actions">
+                        {% if 'user_id' in session %}
+                            <a href="{{ url_for('apply_to_event', eid=event.eid) }}" class="btn-primary">Apply to Perform</a>
+                        {% endif %}
+                        {% if 'sponsor_id' in session %}
+                            <a href="{{ url_for('fund_event', eid=event.eid) }}" class="btn-success">Fund Event</a>
+                        {% endif %}
+                        {% if not session %}
+                            <p class="login-prompt">
+                                <a href="{{ url_for('login') }}">Login as Artist</a> or 
+                                <a href="{{ url_for('sponsor_login') }}">Sponsor</a> to join
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>No events scheduled yet.</p>
+                <p><a href="{{ url_for('contractor_login') }}">Contractors: Create an event →</a></p>
+            </div>
+        {% endif %}
+
+        <p class="back-link"><a href="{{ url_for('login') }}">← Back to Login</a></p>
+    </div>
+
+    <!-- DARK MODE TOGGLE -->
+    <div style="position:fixed; bottom:1.5rem; right:1.5rem; z-index:1000;">
+        <button type="button" class="darkmode-toggle">Toggle</button>
+    </div>
+</body>
+</html>

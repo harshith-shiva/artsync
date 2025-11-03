@@ -467,3 +467,138 @@ body.dark .artist-preview p { color: #aaa; }
 /* Dark Mode */
 body.dark .inbox-card { background: #1e1e1e; border-left-color: #333; }
 body.dark .inbox-card pre { background: #2a2a2a; color: #ddd; }
+.event-card {
+    background: #fff;
+    padding: 1rem;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(255,152,0,.1);
+}
+.btn-success { background: #4CAF50; color: white; }
+
+/* === EVENTS PAGE === */
+.page-title {
+    text-align: center;
+    margin: 1.5rem 0;
+    color: #E65100;
+    font-size: 2rem;
+}
+
+.events-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.8rem;
+    margin: 2rem 0;
+}
+
+.event-card {
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 6px 20px rgba(255, 152, 0, 0.15);
+    transition: all 0.3s ease;
+    border: 1px solid #ffe0b3;
+}
+
+.event-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 30px rgba(255, 152, 0, 0.25);
+}
+
+.event-header {
+    background: linear-gradient(135deg, #FF9800, #F57C00);
+    color: white;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.event-header h3 {
+    margin: 0;
+    font-size: 1.3rem;
+}
+
+.event-type {
+    background: rgba(255,255,255,0.2);
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.event-details {
+    padding: 1.2rem;
+    font-size: 0.95rem;
+    color: #444;
+}
+
+.event-details p {
+    margin: 0.4rem 0;
+}
+
+.event-actions {
+    padding: 0 1.2rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.login-prompt {
+    font-size: 0.9rem;
+    color: #666;
+    text-align: center;
+    margin: 0;
+}
+
+.back-link {
+    text-align: center;
+    margin-top: 2rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #888;
+}
+
+/* Buttons */
+.btn-primary, .btn-success {
+    display: block;
+    text-align: center;
+    padding: 0.7rem;
+    border-radius: 8px;
+    font-weight: bold;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: #E65100;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #D84315;
+}
+
+.btn-success {
+    background: #4CAF50;
+    color: white;
+}
+
+.btn-success:hover {
+    background: #388E3C;
+}
+
+/* Dark Mode */
+body.dark .event-card {
+    background: #1e1e1e;
+    border-color: #333;
+    color: #e0e0e0;
+}
+body.dark .event-header {
+    background: linear-gradient(135deg, #E65100, #D84315);
+}
+body.dark .event-details { color: #ccc; }
+body.dark .empty-state { color: #aaa; }

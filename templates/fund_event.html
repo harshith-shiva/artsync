@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fund {{ event.ename }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Fund Event</h1>
+        <p><strong>Event:</strong> {{ event.ename }}</p>
+        <form method="POST">
+            <input type="number" name="amount" placeholder="Amount ($)" step="0.01" required>
+            <button type="submit" class="btn-success">Send Funding</button>
+        </form>
+        <p><a href="{{ url_for('events_page') }}">Back</a></p>
+    </div>
+</body>
+</html>

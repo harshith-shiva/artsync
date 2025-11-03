@@ -30,6 +30,7 @@
                         <p>{{ artist.description|truncate(100) or 'No bio' }}</p>
                         <a href="{{ url_for('sponsor_offer', aid=artist.aid) }}" class="btn-primary">Send Offer</a>
                         <p><a href="{{ url_for('sponsor_inbox') }}" class="btn-primary">View Inbox ({{ sponsor.requests_received|length }})</a></p>
+                        <p><a href="{{ url_for('events_page') }}" class="btn-success">Browse Events</a></p>
                     </div>
                 {% endfor %}
             </div>
@@ -39,6 +40,34 @@
 
         <p><a href="{{ url_for('sponsor_logout') }}" class="btn-secondary">Logout</a></p>
     </div>
+
+    <!-- ADD THIS AFTER "Browse Artists" OR ANYWHERE -->
+<h2>Upcoming Events</h2>
+<a href="{{ url_for('events_page') }}" class="btn-success" style="margin-bottom:1rem; display:inline-block;">Browse All Events</a>
+
+{% if events %}
+    <div class="events-grid">
+        {% for event in events %}
+        <div class="event-card">
+            <div class="event-header">
+                <h3>{{ event.ename }}</h3>
+                <span class="event-type">{{ event.event_type or 'General' }}</span>
+            </div>
+            <div class="event-details">
+                <p><strong>Date:</strong> {{ event.event_date.strftime('%B %d, %Y') }}</p>
+                <p><strong>Time:</strong> {{ event.event_time.strftime('%I:%M %p') }}</p>
+                <p><strong>Venue:</strong> {{ event.venue }}</p>
+                <p><strong>Hosted by:</strong> {{ event.contractor.name }}</p>
+            </div>
+            <div class="event-actions">
+                <a href="{{ url_for('fund_event', eid=event.eid) }}" class="btn-success">Fund Event</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <p>No upcoming events. <a href="{{ url_for('events_page') }}">Check public list →</a></p>
+{% endif %}
 
     <!-- DARK MODE TOGGLE -->
     <div style="position:fixed; bottom:1.5rem; right:1.5rem; z-index:1000;">

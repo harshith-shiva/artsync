@@ -120,6 +120,51 @@ class SponsorRequest(db.Model):
         foreign_keys='SponsorRequest.artist_id', 
         backref='artist', lazy=True)
 
+# --- Contractor Model ---
+class Contractor(db.Model):
+    __tablename__ = 'Contractor'
+    cid = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    location = db.Column(db.String(100))
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+# --- Event Model ---
+class Event(db.Model):
+    __tablename__ = 'Events'
+    eid = db.Column(db.Integer, primary_key=True)
+    ename = db.Column(db.String(100), nullable=False)
+    event_type = db.Column(db.String(50))
+    event_date = db.Column(db.Date)
+    event_time = db.Column(db.Time)
+    venue = db.Column(db.String(100))
+    capacity = db.Column(db.Integer)
+    cid = db.Column(db.Integer, db.ForeignKey('Contractor.cid'))
+    # --- ADD INSIDE Event class ---
+    contractor = db.relationship('Contractor', backref='events')
+
+# --- Contractor hosts Artist in Event ---
+class Hosts(db.Model):
+    __tablename__ = 'Hosts'
+    cid = db.Column(db.Integer, db.ForeignKey('Contractor.cid'), primary_key=True)
+    aid = db.Column(db.Integer, db.ForeignKey('Artist.aid'), primary_key=True)
+    eid = db.Column(db.Integer, db.ForeignKey('Events.eid'), primary_key=True)
+    status = db.Column(db.Enum('pending', 'confirmed', 'rejected'), default='pending')
+
+# --- Sponsor funds Contractor's Event ---
+class Funds(db.Model):
+    __tablename__ = 'Funds'
+    sid = db.Column(db.Integer, db.ForeignKey('Sponsors.sid'), primary_key=True)
+    cid = db.Column(db.Integer, db.ForeignKey('Contractor.cid'), primary_key=True)
+    eid = db.Column(db.Integer, db.ForeignKey('Events.eid'), primary_key=True)
+    amount = db.Column(db.Numeric(10, 2))
+    status = db.Column(db.Enum('pending', 'funded'), default='pending')
 
 
 # --- Helper: Check file extension ---
@@ -549,7 +594,13 @@ def sponsor_dashboard():
         return redirect(url_for('sponsor_login'))
     sponsor = Sponsor.query.get(session['sponsor_id'])
     artists = Artist.query.all()
-    return render_template('sponsor_dashboard.html', sponsor=sponsor, artists=artists)
+    events = Event.query.options(db.joinedload(Event.contractor)).all()
+    
+    return render_template('sponsor_dashboard.html', 
+                           sponsor=sponsor, 
+                           artists=artists, 
+                           events=events)
+    
 
 # --- SPONSOR: SEND OFFER TO ARTIST ---
 
@@ -670,7 +721,114 @@ def artist_handle_request(rid, action):
     db.session.commit()
     return redirect(url_for('artist_inbox'))
 
+# --- Contractor: Login ---
+@app.route('/contractor/login', methods=['GET', 'POST'])
+def contractor_login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        contractor = Contractor.query.filter_by(email=email).first()
+        if contractor and contractor.check_password(password):
+            session['contractor_id'] = contractor.cid
+            flash('Contractor logged in!', 'success')
+            return redirect(url_for('contractor_dashboard'))
+        flash('Invalid email or password.', 'error')
+    return render_template('contractor_login.html')
 
+
+@app.route('/contractor/register', methods=['GET', 'POST'])
+def contractor_register():
+    if request.method == 'POST':
+        name = request.form['name']
+        email = request.form['email']
+        password = request.form['password']
+        location = request.form.get('location')
+
+        if Contractor.query.filter_by(email=email).first():
+            flash('Email already registered.', 'error')
+            return redirect(url_for('contractor_register'))
+
+        contractor = Contractor(name=name, email=email, location=location)
+        contractor.set_password(password)
+        db.session.add(contractor)
+        db.session.commit()
+        flash('Contractor registered!', 'success')
+        return redirect(url_for('contractor_login'))
+    return render_template('contractor_register.html')
+
+
+# --- Contractor: Dashboard ---
+@app.route('/contractor/dashboard')
+def contractor_dashboard():
+    if 'contractor_id' not in session:
+        return redirect(url_for('contractor_login'))
+    contractor = Contractor.query.get(session['contractor_id'])
+    events = Event.query.filter_by(cid=contractor.cid).all()
+    return render_template('contractor_dashboard.html', contractor=contractor, events=events)
+
+
+
+# --- Contractor: Logout ---
+@app.route('/contractor/logout')
+def contractor_logout():
+    session.pop('contractor_id', None)
+    return redirect(url_for('login'))
+
+# --- Create Event ---
+@app.route('/contractor/event/create', methods=['GET', 'POST'])
+def create_event():
+    if 'contractor_id' not in session:
+        return redirect(url_for('contractor_login'))
+    if request.method == 'POST':
+        event = Event(
+            ename=request.form['ename'],
+            event_type=request.form['event_type'],
+            event_date=request.form['event_date'],
+            event_time=request.form['event_time'],
+            venue=request.form['venue'],
+            capacity=request.form['capacity'],
+            cid=session['contractor_id']
+        )
+        db.session.add(event)
+        db.session.commit()
+        flash('Event created!', 'success')
+        return redirect(url_for('contractor_dashboard'))
+    return render_template('create_event.html')
+
+# --- Public Events Page ---
+@app.route('/events')
+def events_page():
+    events = Event.query.options(db.joinedload(Event.contractor)).all()
+    return render_template('events.html', events=events)
+
+# --- Artist Apply to Event ---
+@app.route('/event/<int:eid>/apply', methods=['GET', 'POST'])
+def apply_to_event(eid):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    event = Event.query.get_or_404(eid)
+    if request.method == 'POST':
+        host = Hosts(cid=event.cid, aid=session['user_id'], eid=eid)
+        db.session.add(host)
+        db.session.commit()
+        flash('Application sent!', 'success')
+        return redirect(url_for('events_page'))
+    return render_template('apply_event.html', event=event)
+
+# --- Sponsor Fund Event ---
+@app.route('/event/<int:eid>/fund', methods=['GET', 'POST'])
+def fund_event(eid):
+    if 'sponsor_id' not in session:
+        return redirect(url_for('sponsor_login'))
+    event = Event.query.get_or_404(eid)
+    if request.method == 'POST':
+        amount = request.form['amount']
+        fund = Funds(sid=session['sponsor_id'], cid=event.cid, eid=eid, amount=amount)
+        db.session.add(fund)
+        db.session.commit()
+        flash('Funding sent!', 'success')
+        return redirect(url_for('events_page'))
+    return render_template('fund_event.html', event=event)
 
 
 
